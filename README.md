@@ -117,7 +117,7 @@ All repositories are bare mirrors, suitable for backup purposes.
 Repositories under `source/` and `forks/` are bare `--mirror` clones, so they do not contain a checked-out working tree. Clone from a mirror path when you want editable files, for example:
 
 ```bash
-git clone /srv/github-backups/source/basnijholt/dotfiles.git ~/work/dotfiles
+git clone /srv/github-backups/source/basnijholt/dotfiles.git ~/dotfiles
 ```
 
 You can also inspect a mirror directly without cloning by pointing Git commands at it, e.g. `git --git-dir=/srv/github-backups/source/basnijholt/dotfiles.git log --oneline`.
