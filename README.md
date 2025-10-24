@@ -97,6 +97,12 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 │ --lfs                                                      Fetch Git LFS     │
 │                                                            objects after     │
 │                                                            mirroring         │
+│ --working-tree        --bare                               Clone             │
+│                                                            repositories as   │
+│                                                            working trees     │
+│                                                            instead of bare   │
+│                                                            mirrors           │
+│                                                            [default: bare]   │
 │ --sleep                                   FLOAT RANGE      Delay between     │
 │                                           [x>=0.0]         repositories in   │
 │                                                            seconds           │
