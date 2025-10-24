@@ -288,7 +288,7 @@ def test_prune_or_preview_behaviour(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     gbs._prune_or_preview(root, expected, prune=False)
     output = capfd.readouterr().out
     assert "Dry-run prune preview" in output
-    assert "new.g" in output
+    assert "new.git" in output.replace("\n", "")
 
     shutil.rmtree(stray2)
     gbs._prune_or_preview(root, expected, prune=False)
