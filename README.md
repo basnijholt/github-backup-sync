@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [GitHub Backup Sync](#github-backup-sync)
+  - [Requirements](#requirements)
+  - [Usage](#usage)
+    - [CLI Help](#cli-help)
+  - [Layout](#layout)
+  - [Working with Mirrors](#working-with-mirrors)
+  - [Automated Backups (cron)](#automated-backups-cron)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # GitHub Backup Sync
 
 `github_backup_sync.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately. The project was inspired after watching [ThePrimeTime's reminder about GitHub bans](https://www.youtube.com/watch?v=7gCCXCSs734), highlighting why local backups matter. Plenty of alternative backup tools exist, but I wanted something simple that relies on the GitHub CLI for authentication so I never have to juggle API tokens directly.
