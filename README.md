@@ -78,38 +78,41 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 
  Coordinate the CLI workflow for mirroring repositories.
 
-╭─ Options ──────────────────────────────────────────────────────────────────────────────╮
-│ --root              -r                        PATH                Directory that will  │
-│                                                                   hold the mirror      │
-│ --https                                                           Use HTTPS remotes    │
-│                                                                   (token optional for  │
-│                                                                   public repos)        │
-│ --include-archived      --exclude-archived                        Include archived     │
-│                                                                   repositories         │
-│                                                                   [default:            │
-│                                                                   include-archived]    │
-│ --prune                                                           Remove local mirrors │
-│                                                                   that no longer exist │
-│                                                                   upstream             │
-│ --lfs                                                             Fetch Git LFS        │
-│                                                                   objects after        │
-│                                                                   mirroring            │
-│ --sleep                                       FLOAT RANGE         Delay between        │
-│                                               [x>=0.0]            repositories in      │
-│                                                                   seconds              │
-│                                                                   [default: 0.0]       │
-│ --limit                                       INTEGER RANGE       Process at most this │
-│                                               [x>=1]              many repositories    │
-│ --skip-forks                                                      Ignore forked        │
-│                                                                   repositories while   │
-│                                                                   mirroring            │
-│ --workers           -w                        INTEGER RANGE       Max concurrent       │
-│                                               [x>=1]              mirror operations    │
-│                                                                   (default: based on   │
-│                                                                   CPU count)           │
-│ --help              -h                                            Show this message    │
-│                                                                   and exit.            │
-╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --root            -r                      PATH             Directory that    │
+│                                                            will hold the     │
+│                                                            mirror            │
+│ --https                                                    Use HTTPS remotes │
+│                                                            (token optional   │
+│                                                            for public repos) │
+│ --include-archi…      --exclude-archi…                     Include archived  │
+│                                                            repositories      │
+│                                                            [default:         │
+│                                                            include-archived] │
+│ --prune                                                    Remove local      │
+│                                                            mirrors that no   │
+│                                                            longer exist      │
+│                                                            upstream          │
+│ --lfs                                                      Fetch Git LFS     │
+│                                                            objects after     │
+│                                                            mirroring         │
+│ --sleep                                   FLOAT RANGE      Delay between     │
+│                                           [x>=0.0]         repositories in   │
+│                                                            seconds           │
+│                                                            [default: 0.0]    │
+│ --limit                                   INTEGER RANGE    Process at most   │
+│                                           [x>=1]           this many         │
+│                                                            repositories      │
+│ --skip-forks                                               Ignore forked     │
+│                                                            repositories      │
+│                                                            while mirroring   │
+│ --workers         -w                      INTEGER RANGE    Max concurrent    │
+│                                           [x>=1]           mirror operations │
+│                                                            (default: based   │
+│                                                            on CPU count)     │
+│ --help            -h                                       Show this message │
+│                                                            and exit.         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
