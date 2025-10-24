@@ -1,6 +1,6 @@
-# GitHub Full Mirror
+# GitHub Backup Sync
 
-`mirror_github_all.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately.
+`github_backup_sync.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately.
 
 ## Requirements
 
@@ -13,7 +13,7 @@ The script also works inside a manual virtual environment if you install the sam
 ## Usage
 
 ```bash
-./mirror_github_all.py --root /path/to/mirrors [--https] [--prune]
+./github_backup_sync.py --root /path/to/mirrors [--https] [--prune]
 ```
 
 - `--root` points at the backup directory.
