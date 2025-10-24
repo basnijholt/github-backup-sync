@@ -10,13 +10,16 @@
 # ///
 
 import asyncio
+import os
 import shutil
 import subprocess
 import time
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Sequence, Set
+from typing import List, Optional, Sequence, Set, Tuple
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import httpx
 import typer
@@ -128,6 +131,25 @@ def ensure_mirror(repo: RepoInfo, path: Path, remote: str, lfs: bool) -> str:
     return action
 
 
+def mirror_worker(
+    repo: RepoInfo,
+    destination: Path,
+    remote: str,
+    lfs: bool,
+    sleep_seconds: float,
+) -> Tuple[str, str, Path, Optional[str]]:
+    try:
+        action = ensure_mirror(repo, destination, remote, lfs=lfs)
+        if sleep_seconds:
+            time.sleep(sleep_seconds)
+        return repo.full_name, action, destination, None
+    except subprocess.CalledProcessError as exc:
+        message = exc.stdout.strip() if exc.stdout else str(exc)
+        return repo.full_name, "error", destination, message
+    except Exception as exc:  # noqa: BLE001
+        return repo.full_name, "error", destination, str(exc)
+
+
 def collect_existing(root: Path) -> Set[Path]:
     existing: Set[Path] = set()
     for category in ("source", "forks"):
@@ -146,6 +168,7 @@ def collect_existing(root: Path) -> Set[Path]:
 async def fetch_repositories(
     token: Optional[str],
     include_archived: bool,
+    skip_forks: bool,
     limit: Optional[int],
 ) -> List[RepoInfo]:
     timeout = httpx.Timeout(10.0, read=30.0)
@@ -166,6 +189,8 @@ async def fetch_repositories(
             }
             async for payload in gh.getiter("/user/repos", params):
                 info = RepoInfo.from_payload(payload)
+                if skip_forks and info.fork:
+                    continue
                 if not include_archived and info.archived:
                     continue
                 repos.append(info)
@@ -231,6 +256,16 @@ def main(
     limit: Optional[int] = typer.Option(
         None, "--limit", min=1, help="Process at most this many repositories"
     ),
+    skip_forks: bool = typer.Option(
+        False, "--skip-forks", help="Ignore forked repositories while mirroring"
+    ),
+    workers: Optional[int] = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        min=1,
+        help="Max concurrent mirror operations (default: based on CPU count)",
+    ),
 ) -> None:
     if root is None:
         typer.echo(ctx.get_help())
@@ -250,6 +285,7 @@ def main(
             fetch_repositories(
                 token=token,
                 include_archived=include_archived,
+                skip_forks=skip_forks,
                 limit=limit,
             )
         )
@@ -264,10 +300,35 @@ def main(
     if limit:
         repos_info = repos_info[:limit]
 
-    console.print(f"[bold]Mirroring {len(repos_info)} repositories into {root}[/]")
-
+    jobs: List[Tuple[RepoInfo, Path, str]] = []
     expected_paths: Set[Path] = set()
-    outcomes: List[tuple[str, str, Path]] = []
+    for repo in repos_info:
+        destination = desired_path(root, repo)
+        expected_paths.add(destination.resolve())
+        try:
+            remote = remote_url(
+                repo, use_https=use_https, token=token if use_https else None
+            )
+        except RuntimeError as exc:
+            console.print(f"[red]{exc}")
+            continue
+        jobs.append((repo, destination, remote))
+
+    if not jobs:
+        console.print("[yellow]No repositories left to process after filtering.")
+        raise typer.Exit()
+
+    if workers is None:
+        cpu_count = os.cpu_count() or 4
+        workers = min(8, max(1, cpu_count))
+
+    console.print(
+        f"[bold]Mirroring {len(jobs)} repositories into {root}[/] using {workers} worker(s)"
+    )
+
+    outcomes: List[Tuple[str, str, Path]] = []
+    errors: List[Tuple[str, str]] = []
+
     with Progress(
         SpinnerColumn(),
         TextColumn("{task.description}"),
@@ -275,29 +336,35 @@ def main(
         console=console,
         transient=True,
     ) as progress:
-        task = progress.add_task("Preparing", total=len(repos_info))
-        for repo in repos_info:
-            progress.update(task, description=f"{repo.full_name}")
-            destination = desired_path(root, repo)
-            expected_paths.add(destination.resolve())
-            remote = remote_url(
-                repo, use_https=use_https, token=token if use_https else None
-            )
-            try:
-                action = ensure_mirror(repo, destination, remote, lfs=lfs)
-                outcomes.append((repo.full_name, action, destination))
-            except subprocess.CalledProcessError as exc:
-                console.print(f"[red]git failed for {repo.full_name}[/]")
-                if exc.stdout:
-                    console.print(exc.stdout)
-            progress.advance(task)
-            if sleep_seconds:
-                time.sleep(sleep_seconds)
+        task = progress.add_task("Queued", total=len(jobs))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            future_map = {
+                executor.submit(
+                    mirror_worker,
+                    repo,
+                    destination,
+                    remote,
+                    lfs,
+                    sleep_seconds,
+                ): repo
+                for repo, destination, remote in jobs
+            }
+            for future in as_completed(future_map):
+                name, action, path, error = future.result()
+                progress.update(task, advance=1, description=name)
+                outcomes.append((name, action, path))
+                if error:
+                    errors.append((name, error))
 
     table = Table("Repository", "Action", "Path", title="Mirror summary")
     for name, action, path in outcomes:
         table.add_row(name, action, str(path))
     console.print(table)
+
+    if errors:
+        console.print("[red]Errors encountered:[/]")
+        for name, message in errors:
+            console.print(f"  [bold]{name}[/]: {message}")
 
     prune_or_preview(root, expected_paths, prune=prune)
 

@@ -13,12 +13,14 @@ The script also works inside a manual virtual environment if you install the sam
 ## Usage
 
 ```bash
-./github_backup_sync.py --root /path/to/mirrors [--https] [--prune]
+./github_backup_sync.py --root /path/to/mirrors [--https] [--prune] [--skip-forks] [--workers 4]
 ```
 
 - `--root` points at the backup directory.
 - `--https` switches from SSH to HTTPS remotes (still using the `gh` token).
 - `--prune` removes local mirrors that no longer exist upstream.
+- `--skip-forks` mirrors only non-fork repositories.
+- `--workers` controls how many repositories sync in parallel (default: CPU-based).
 - `--limit` is handy for smoke-testing with only a few repos.
 
 The script automatically fetches a GitHub token from `gh auth token`, so you only need to keep the CLI logged in.
