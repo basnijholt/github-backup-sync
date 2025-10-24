@@ -33,3 +33,13 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 ```
 
 All repositories are bare mirrors, suitable for backup purposes.
+
+## Automated Backups (cron)
+
+You can schedule a daily sync via `cron` after installing the script somewhere on your `$PATH`:
+
+```cron
+0 3 * * * /usr/bin/env uv run /opt/github-backup-sync/github_backup_sync.py --root /srv/github-backups --https --prune --workers 4 >> /var/log/github-backup-sync.log 2>&1
+```
+
+This example runs every day at 03:00, performs a prune, and logs output. Adjust the path, flags, and worker count to suit your environment.
