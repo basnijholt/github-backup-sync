@@ -8,13 +8,12 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [GitHub Backup Sync](#github-backup-sync)
-  - [Requirements](#requirements)
-  - [Usage](#usage)
-    - [CLI Help](#cli-help)
-  - [Layout](#layout)
-  - [Working with Mirrors](#working-with-mirrors)
-  - [Automated Backups (cron)](#automated-backups-cron)
+- [Requirements](#requirements)
+- [Usage](#usage)
+  - [CLI Help](#cli-help)
+- [Layout](#layout)
+- [Working with Mirrors](#working-with-mirrors)
+- [Automated Backups (cron)](#automated-backups-cron)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
