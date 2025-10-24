@@ -1,0 +1,102 @@
+[build-system]
+requires = ["hatchling", "versioningit"]
+build-backend = "hatchling.build"
+
+[project]
+name = "github-backup-sync"
+description = "Mirror every GitHub repository you can access into local bare git mirrors."
+dynamic = ["version"]
+authors = [{ name = "Bas Nijholt", email = "bas@nijho.lt" }]
+dependencies = [
+    "gidgethub[httpx]>=5.0.0",
+    "httpx>=0.27.0",
+    "rich>=13.7.0",
+    "typer>=0.12.3",
+]
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/basnijholt/github-backup-sync"
+
+[project.optional-dependencies]
+test = ["pytest", "coverage", "pytest-cov"]
+
+[project.scripts]
+github-backup-sync = "github_backup_sync:app"
+
+[tool.hatch.build]
+include = ["github_backup_sync.py"]
+
+[tool.pytest.ini_options]
+addopts = """
+    --cov=github_backup_sync
+    --cov-report term
+    --cov-report html
+    --cov-fail-under=70
+"""
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line_length = 88
+
+[tool.ruff]
+line-length = 150
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "FBT001", # Allow Typer option booleans; CLI signature requires default bools
+    "FBT003", # Typer callback signatures intentionally include boolean keyword defaults
+    "B008",  # Typer option declarations happen inline per framework conventions
+    "B904",  # Typer raises Exit without chaining; behavior matches CLI expectations
+    "S607",  # Subprocess calls use trusted executables resolved via PATH or configuration
+    "EXE003", # Script uses uv shebang intentionally instead of direct python interpreter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["SLF001"]
+".github/*" = ["INP001"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+check_untyped_defs = true
+strict_equality = true
+
+[tool.hatch.version]
+source = "versioningit"
+default-version = "0.0.0+unknown"
+
+[tool.hatch.version.vcs]
+method = "git"
+match = ["v*"]
+default-tag = "0.0.0"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.4",
+    "pytest-cov>=4.1.0",
+]
