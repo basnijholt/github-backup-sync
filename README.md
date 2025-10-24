@@ -34,6 +34,16 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 
 All repositories are bare mirrors, suitable for backup purposes.
 
+## Working with Mirrors
+
+Repositories under `source/` and `forks/` are bare `--mirror` clones, so they do not contain a checked-out working tree. Clone from a mirror path when you want editable files, for example:
+
+```bash
+git clone /srv/github-backups/source/basnijholt/dotfiles.git ~/work/dotfiles
+```
+
+You can also inspect a mirror directly without cloning by pointing Git commands at it, e.g. `git --git-dir=/srv/github-backups/source/basnijholt/dotfiles.git log --oneline`.
+
 ## Automated Backups (cron)
 
 You can schedule a daily sync via `cron` after installing the script somewhere on your `$PATH`:
