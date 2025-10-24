@@ -21,6 +21,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import httpx
 import typer
@@ -45,6 +46,7 @@ class RepoInfo:
     archived: bool
     ssh_url: str
     clone_url: str
+    default_branch: str | None
 
     @classmethod
     def from_payload(cls, payload: dict) -> "RepoInfo":
@@ -58,7 +60,26 @@ class RepoInfo:
             archived=payload.get("archived", False),
             ssh_url=payload.get("ssh_url", ""),
             clone_url=payload.get("clone_url", ""),
+            default_branch=payload.get("default_branch"),
         )
+
+
+@dataclass(frozen=True)
+class MirrorJob:
+    """Input describing a single mirroring task."""
+
+    repo: RepoInfo
+    destination: Path
+    remote: str
+
+
+@dataclass(frozen=True)
+class MirrorOptions:
+    """Runtime options that influence mirroring behaviour."""
+
+    bare: bool
+    lfs: bool
+    sleep_seconds: float
 
 
 def run_git(
@@ -121,23 +142,79 @@ def remote_url(repo: RepoInfo, use_https: bool, token: str | None) -> str:
     return repo.ssh_url
 
 
-def ensure_mirror(repo: RepoInfo, path: Path, remote: str, lfs: bool) -> str:
-    """Clone or update the local mirror for a single repository."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        run_git(["remote", "set-url", "origin", remote], cwd=path, check=False)
+def detect_default_branch(repo: RepoInfo, path: Path) -> str | None:
+    """Return the default branch for the repository if known."""
+    if repo.default_branch:
+        return repo.default_branch
+    result = run_git(
+        ["symbolic-ref", "refs/remotes/origin/HEAD"],
+        cwd=path,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    stdout = cast(str, result.stdout)
+    ref = stdout.strip()
+    if ref.startswith("refs/remotes/origin/"):
+        return ref.rsplit("/", 1)[-1]
+    return None
+
+
+def clone_initial(job: MirrorJob, bare: bool) -> None:
+    """Clone a repository either as a mirror or a working tree."""
+    repo = job.repo
+    path = job.destination
+    remote = job.remote
+    result = run_git(["clone", "--mirror", remote, str(path)]) if bare else run_git(["clone", remote, str(path)])
+    if result.stdout.strip():
+        console.log(result.stdout.strip())
+    mode = "mirror" if bare else "working tree"
+    console.log(f"{repo.full_name}: {mode} cloned")
+
+
+def update_existing(job: MirrorJob, bare: bool) -> None:
+    """Update an existing clone."""
+    repo = job.repo
+    path = job.destination
+    remote = job.remote
+    run_git(["remote", "set-url", "origin", remote], cwd=path, check=False)
+    if bare:
         result = run_git(["remote", "update", "--prune"], cwd=path)
         if result.stdout.strip():
             console.log(result.stdout.strip())
         console.log(f"{repo.full_name}: mirror updated")
-        action = "updated"
+        return
+
+    result = run_git(["fetch", "--all", "--tags", "--prune"], cwd=path)
+    if result.stdout.strip():
+        console.log(result.stdout.strip())
+    default_branch = detect_default_branch(repo, path)
+    if default_branch:
+        checkout = run_git(["checkout", default_branch], cwd=path, check=False)
+        if checkout.returncode != 0:
+            run_git(
+                ["checkout", "-B", default_branch, f"origin/{default_branch}"],
+                cwd=path,
+            )
+        run_git(["reset", "--hard", f"origin/{default_branch}"], cwd=path)
+        console.log(f"{repo.full_name}: working tree updated")
+        return
+
+    console.log(
+        f"{repo.full_name}: unable to determine default branch; skipped worktree reset",
+    )
+
+
+def ensure_mirror(job: MirrorJob, options: MirrorOptions) -> str:
+    """Clone or update the local mirror for a single repository."""
+    path = job.destination
+    path.parent.mkdir(parents=True, exist_ok=True)
+    action = "updated" if path.exists() else "cloned"
+    if path.exists():
+        update_existing(job, options.bare)
     else:
-        result = run_git(["clone", "--mirror", remote, str(path)])
-        if result.stdout.strip():
-            console.log(result.stdout.strip())
-        console.log(f"{repo.full_name}: mirror cloned")
-        action = "cloned"
-    if lfs:
+        clone_initial(job, options.bare)
+    if options.lfs:
         try:
             run_git(["lfs", "fetch", "--all"], cwd=path, check=False)
         except FileNotFoundError:
@@ -146,24 +223,21 @@ def ensure_mirror(repo: RepoInfo, path: Path, remote: str, lfs: bool) -> str:
 
 
 def mirror_worker(
-    repo: RepoInfo,
-    destination: Path,
-    remote: str,
-    lfs: bool,
-    sleep_seconds: float,
+    job: MirrorJob,
+    options: MirrorOptions,
 ) -> tuple[str, str, Path, str | None]:
     """Mirror a repository and return the action, propagating any errors."""
     try:
-        action = ensure_mirror(repo, destination, remote, lfs=lfs)
+        action = ensure_mirror(job, options)
     except subprocess.CalledProcessError as exc:
         message = exc.stdout.strip() if exc.stdout else str(exc)
-        return repo.full_name, "error", destination, message
+        return job.repo.full_name, "error", job.destination, message
     except Exception as exc:  # noqa: BLE001
-        return repo.full_name, "error", destination, str(exc)
+        return job.repo.full_name, "error", job.destination, str(exc)
     else:
-        if sleep_seconds:
-            time.sleep(sleep_seconds)
-        return repo.full_name, action, destination, None
+        if options.sleep_seconds:
+            time.sleep(options.sleep_seconds)
+        return job.repo.full_name, action, job.destination, None
 
 
 def collect_existing(root: Path) -> set[Path]:
@@ -177,7 +251,7 @@ def collect_existing(root: Path) -> set[Path]:
             if not owner_dir.is_dir():
                 continue
             for repo_dir in owner_dir.iterdir():
-                if repo_dir.is_dir() and repo_dir.name.endswith(".git"):
+                if repo_dir.is_dir():
                     existing.add(repo_dir.resolve())
     return existing
 
@@ -221,10 +295,12 @@ async def fetch_repositories(
     return repos
 
 
-def desired_path(root: Path, repo: RepoInfo) -> Path:
-    """Compute the target mirror directory for ``repo``."""
+def desired_path(root: Path, repo: RepoInfo, bare: bool) -> Path:
+    """Compute the target directory for ``repo`` based on mirror mode."""
     category = "forks" if repo.fork else "source"
-    return root / category / repo.owner / f"{repo.name}.git"
+    suffix = ".git" if bare else ""
+    name = f"{repo.name}{suffix}"
+    return root / category / repo.owner / name
 
 
 def prune_or_preview(root: Path, expected: set[Path], prune: bool) -> None:
@@ -236,7 +312,7 @@ def prune_or_preview(root: Path, expected: set[Path], prune: bool) -> None:
             console.print("[green]No stale mirrors to prune.[/]")
             return
         for path in to_delete:
-            if not path.is_dir() or not path.name.endswith(".git"):
+            if not path.is_dir():
                 console.print(f"[yellow]Skipping unexpected path: {path}")
                 continue
             console.print(f"[red]Deleting[/] {path}")
@@ -279,6 +355,11 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
         "--lfs",
         help="Fetch Git LFS objects after mirroring",
     ),
+    working_tree: bool = typer.Option(
+        False,
+        "--working-tree/--bare",
+        help="Clone repositories as working trees instead of bare mirrors",
+    ),
     sleep_seconds: float = typer.Option(
         0.0,
         "--sleep",
@@ -310,6 +391,8 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
         console.print("[red]Missing required option '--root'.[/]")
         raise typer.Exit(1)
 
+    bare = not working_tree
+
     token = obtain_token()
     if not token:
         console.print("[red]Unable to retrieve GitHub token via gh CLI. Exiting.")
@@ -338,10 +421,10 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
     if limit:
         repos_info = repos_info[:limit]
 
-    jobs: list[tuple[RepoInfo, Path, str]] = []
+    jobs: list[MirrorJob] = []
     expected_paths: set[Path] = set()
     for repo in repos_info:
-        destination = desired_path(root, repo)
+        destination = desired_path(root, repo, bare=bare)
         expected_paths.add(destination.resolve())
         try:
             remote = remote_url(
@@ -352,7 +435,7 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
         except RuntimeError as exc:
             console.print(f"[red]{exc}")
             continue
-        jobs.append((repo, destination, remote))
+        jobs.append(MirrorJob(repo, destination, remote))
 
     if not jobs:
         console.print("[yellow]No repositories left to process after filtering.")
@@ -362,12 +445,15 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
         cpu_count = os.cpu_count() or 4
         workers = min(8, max(1, cpu_count))
 
+    mode_description = "bare mirrors" if bare else "working trees"
     console.print(
-        f"[bold]Mirroring {len(jobs)} repositories into {root}[/] using {workers} worker(s)",
+        f"[bold]Mirroring {len(jobs)} repositories into {root}[/] as {mode_description} using {workers} worker(s)",
     )
 
     outcomes: list[tuple[str, str, Path]] = []
     errors: list[tuple[str, str]] = []
+
+    options = MirrorOptions(bare=bare, lfs=lfs, sleep_seconds=sleep_seconds)
 
     with Progress(
         SpinnerColumn(),
@@ -381,13 +467,10 @@ def main(  # noqa: PLR0913,PLR0912,PLR0915  # CLI entrypoint needs many options 
             future_map = {
                 executor.submit(
                     mirror_worker,
-                    repo,
-                    destination,
-                    remote,
-                    lfs,
-                    sleep_seconds,
-                ): repo
-                for repo, destination, remote in jobs
+                    job,
+                    options,
+                ): job.repo
+                for job in jobs
             }
             for future in as_completed(future_map):
                 name, action, path, error_message = future.result()

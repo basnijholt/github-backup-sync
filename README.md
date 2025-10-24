@@ -51,6 +51,7 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 - `--root` points at the backup directory.
 - `--https` switches from SSH to HTTPS remotes (still using the `gh` token).
 - `--prune` removes local mirrors that no longer exist upstream.
+- `--working-tree` clones repositories with their files checked out instead of as bare mirrors (default: bare mirrors).
 - `--skip-forks` mirrors only non-fork repositories.
 - `--workers` controls how many repositories sync in parallel (default: CPU-based).
 - `--limit` is handy for smoke-testing with only a few repos.
@@ -127,11 +128,11 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 <root>/forks/<owner>/<repo>.git
 ```
 
-All repositories are bare mirrors, suitable for backup purposes.
+This is the default layout when backing up as bare mirrors. When `--working-tree` is used, the `.git` suffix is omitted and each directory contains a checked-out working tree instead.
 
 ## Working with Mirrors
 
-Repositories under `source/` and `forks/` are bare `--mirror` clones, so they do not contain a checked-out working tree. Clone from a mirror path when you want editable files, for example:
+Repositories under `source/` and `forks/` are bare `--mirror` clones, so they do not contain a checked-out working tree unless you opted into `--working-tree`. Clone from a mirror path when you want editable files, for example:
 
 ```bash
 git clone /srv/github-backups/source/basnijholt/dotfiles.git ~/dotfiles
