@@ -1,0 +1,33 @@
+# GitHub Full Mirror
+
+`mirror_github_all.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately.
+
+## Requirements
+
+- [`uv`](https://docs.astral.sh/uv/latest/) (recommended; the shebang runs the script through `uv run`)
+- GitHub CLI (`gh`) authenticated with `gh auth login`
+- `git` and, optionally, `git-lfs` if you use the `--lfs` flag
+
+The script also works inside a manual virtual environment if you install the same dependencies listed in the script header, but `uv` provides the fastest startup and dependency management.
+
+## Usage
+
+```bash
+./mirror_github_all.py --root /path/to/mirrors [--https] [--prune]
+```
+
+- `--root` points at the backup directory.
+- `--https` switches from SSH to HTTPS remotes (still using the `gh` token).
+- `--prune` removes local mirrors that no longer exist upstream.
+- `--limit` is handy for smoke-testing with only a few repos.
+
+The script automatically fetches a GitHub token from `gh auth token`, so you only need to keep the CLI logged in.
+
+## Layout
+
+```
+<root>/source/<owner>/<repo>.git
+<root>/forks/<owner>/<repo>.git
+```
+
+All repositories are bare mirrors, suitable for backup purposes.
