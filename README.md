@@ -1,5 +1,9 @@
 # GitHub Backup Sync
 
+[![PyPI - Version](https://img.shields.io/pypi/v/github-backup-sync?label=PyPI&logo=pypi)](https://pypi.org/project/github-backup-sync/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/github-backup-sync?logo=python)](https://pypi.org/project/github-backup-sync/)
+[![License](https://img.shields.io/pypi/l/github-backup-sync)](LICENSE)
+
 `github_backup_sync.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately. The project was inspired after watching [ThePrimeTime's reminder about GitHub bans](https://www.youtube.com/watch?v=7gCCXCSs734), highlighting why local backups matter. Plenty of alternative backup tools exist, but I wanted something simple that relies on the GitHub CLI for authentication so I never have to juggle API tokens directly.
 
 <details>
@@ -9,6 +13,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Requirements](#requirements)
+- [Installation](#installation)
 - [Usage](#usage)
   - [CLI Help](#cli-help)
 - [Layout](#layout)
@@ -27,9 +32,19 @@
 
 The script also works inside a manual virtual environment if you install the same dependencies listed in the script header, but `uv` provides the fastest startup and dependency management.
 
+## Installation
+
+- Run on demand with `uvx github-backup-sync -- --help` or any command; `uvx` fetches the latest release and executes it without a local install.
+- Install it permanently with `uv tool install github-backup-sync`, which exposes the `github-backup-sync` CLI directly on your `PATH`.
+- Prefer to vendor the script? Copy `github_backup_sync.py` into your own repository and execute it in place just like before.
+
 ## Usage
 
 ```bash
+# If installed via PyPI
+github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [--workers 4]
+
+# From a local checkout
 ./github_backup_sync.py --root /path/to/mirrors [--https] [--prune] [--skip-forks] [--workers 4]
 ```
 
