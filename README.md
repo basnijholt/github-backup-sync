@@ -1,3 +1,10 @@
+# GitHub Backup Sync
+
+`github_backup_sync.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately. The project was inspired after watching [ThePrimeTime's reminder about GitHub bans](https://www.youtube.com/watch?v=7gCCXCSs734), highlighting why local backups matter. Plenty of alternative backup tools exist, but I wanted something simple that relies on the GitHub CLI for authentication so I never have to juggle API tokens directly.
+
+<details>
+<summary>Table of Contents</summary>
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -11,9 +18,7 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# GitHub Backup Sync
-
-`github_backup_sync.py` mirrors every GitHub repository your account can access into bare `--mirror` clones, grouping sources and forks separately. The project was inspired after watching [ThePrimeTime's reminder about GitHub bans](https://www.youtube.com/watch?v=7gCCXCSs734), highlighting why local backups matter. Plenty of alternative backup tools exist, but I wanted something simple that relies on the GitHub CLI for authentication so I never have to juggle API tokens directly.
+</details>
 
 ## Requirements
 
@@ -56,6 +61,8 @@ The script automatically fetches a GitHub token from `gh auth token`, so you onl
 ```text
 
  Usage: github_backup_sync.py [OPTIONS]
+
+ Coordinate the CLI workflow for mirroring repositories.
 
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────╮
 │ --root              -r                        PATH                Directory that will  │
