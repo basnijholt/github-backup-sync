@@ -36,6 +36,7 @@ include = ["github_backup_sync.py"]
 addopts = """
     --cov=github_backup_sync
     --cov-report term
+    --cov-report xml
     --cov-report html
     --cov-fail-under=85
 """
