@@ -30,6 +30,9 @@ jobs:
           uvx markdown-code-runner --verbose README.md
           sed -i 's/[[:space:]]*$//' README.md
 
+      - name: Update table of contents
+        run: npx --yes doctoc --notitle --github README.md
+
       - name: Commit updated README.md
         id: commit
         run: |
