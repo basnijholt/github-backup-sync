@@ -14,10 +14,11 @@
 import asyncio
 import os
 import shutil
+import stat
 import subprocess
 import time
 import urllib.parse
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
@@ -429,6 +430,12 @@ def _desired_path(root: Path, repo: RepoInfo, bare: bool) -> Path:
     return root / category / repo.owner / name
 
 
+def _make_writable_and_retry(func: Callable[[str], object], target: str, _exc: BaseException) -> None:
+    """Clear the read-only bit that blocks deleting git objects on Windows, then retry."""
+    Path(target).chmod(stat.S_IWRITE)
+    func(target)
+
+
 def _prune_or_preview(root: Path, expected: set[Path], prune: bool) -> None:
     """Either remove or list local mirror directories not in ``expected``."""
     existing = _collect_existing(root)
@@ -437,13 +444,19 @@ def _prune_or_preview(root: Path, expected: set[Path], prune: bool) -> None:
         if not to_delete:
             console.print("[green]No stale mirrors to prune.[/]")
             return
+        pruned = 0
         for path in to_delete:
             if not path.is_dir():
                 console.print(f"[yellow]Skipping unexpected path: {path}")
                 continue
             console.print(f"[red]Deleting[/] {path}")
-            subprocess.run(["rm", "-rf", str(path)], check=False)  # noqa: S603  # Removing stale mirrors from local disk
-        console.print(f"[green]Pruned {len(to_delete)} mirror(s).")
+            try:
+                shutil.rmtree(path, onexc=_make_writable_and_retry)
+            except OSError as exc:
+                console.print(f"[red]Failed to delete {path}: {exc}")
+                continue
+            pruned += 1
+        console.print(f"[green]Pruned {pruned} mirror(s).")
     elif to_delete:
         console.print("[cyan]Dry-run prune preview (use --prune to remove):")
         for path in to_delete:

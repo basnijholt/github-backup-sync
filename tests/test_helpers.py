@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+import stat
 import subprocess
 from http import HTTPStatus
 from pathlib import Path
@@ -305,6 +306,47 @@ def test_prune_or_preview_skips_non_directory(monkeypatch: pytest.MonkeyPatch, t
     gbs._prune_or_preview(tmp_path, set(), prune=True)
     output = capfd.readouterr().out
     assert "Skipping unexpected path" in output
+
+
+def test_prune_removes_read_only_files(tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+    stray = tmp_path / "source" / "org" / "old.git"
+    objects = stray / "objects" / "ab"
+    objects.mkdir(parents=True)
+    packed = objects / "cdef"
+    packed.write_text("blob")
+    packed.chmod(stat.S_IREAD)
+
+    gbs._prune_or_preview(tmp_path, set(), prune=True)
+    assert not stray.exists()
+    assert "Pruned 1 mirror(s)" in capfd.readouterr().out
+
+
+def test_make_writable_and_retry(tmp_path: Path) -> None:
+    target = tmp_path / "read-only"
+    target.write_text("data")
+    target.chmod(stat.S_IREAD)
+    calls: list[str] = []
+
+    def remove(path: str) -> None:
+        assert Path(path).stat().st_mode & stat.S_IWRITE
+        calls.append(path)
+
+    gbs._make_writable_and_retry(remove, str(target), PermissionError())
+    assert calls == [str(target)]
+
+
+def test_prune_reports_failed_deletions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+    stray = tmp_path / "source" / "org" / "old.git"
+    stray.mkdir(parents=True)
+
+    def fail(*_args, **_kwargs):
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(gbs.shutil, "rmtree", fail)
+    gbs._prune_or_preview(tmp_path, set(), prune=True)
+    output = capfd.readouterr().out
+    assert "Failed to delete" in output
+    assert "Pruned 0 mirror(s)" in output
 
 
 def test_load_repositories_limit_and_failure(monkeypatch: pytest.MonkeyPatch) -> None:
