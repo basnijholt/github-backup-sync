@@ -125,6 +125,7 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 <!-- export NO_COLOR=1 -->
 <!-- export TERM=dumb -->
 <!-- export TERMINAL_WIDTH=110 -->
+<!-- unset GITHUB_ACTIONS  # typer forces terminal mode on CI, which pins TERM=dumb output to 80 columns -->
 <!-- ./github_backup_sync.py --help -->
 <!-- echo '```' -->
 <!-- CODE:END -->
@@ -136,47 +137,30 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 
  Mirror every GitHub repository you can access into local git mirrors.
 
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --root            -r                      <path>           Directory that    │
-│                                                            will hold the     │
-│                                                            mirror            │
-│ --https                                                    Use HTTPS remotes │
-│                                                            (token optional   │
-│                                                            for public repos) │
-│ --include-archi…      --exclude-archi…                     Include archived  │
-│                                                            repositories      │
-│                                                            [default:         │
-│                                                            include-archived] │
-│ --prune                                                    Remove local      │
-│                                                            mirrors that no   │
-│                                                            longer exist      │
-│                                                            upstream          │
-│ --lfs                                                      Fetch Git LFS     │
-│                                                            objects after     │
-│                                                            mirroring         │
-│ --working-tree        --bare                               Clone             │
-│                                                            repositories as   │
-│                                                            working trees     │
-│                                                            instead of bare   │
-│                                                            mirrors           │
-│                                                            [default: bare]   │
-│ --sleep                                   <float range>    Delay between     │
-│                                           [x>=0.0]         repositories in   │
-│                                                            seconds           │
-│                                                            [default: 0.0]    │
-│ --limit                                   <int range>      Process at most   │
-│                                           [x>=1]           this many         │
-│                                                            repositories      │
-│ --skip-forks                                               Ignore forked     │
-│                                                            repositories      │
-│                                                            while mirroring   │
-│ --workers         -w                      <int range>      Max concurrent    │
-│                                           [x>=1]           mirror operations │
-│                                                            (default: based   │
-│                                                            on CPU count)     │
-│ --help            -h                                       Show this message │
-│                                                            and exit.         │
-╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --root              -r                        <path>                  Directory that will hold the mirror  │
+│ --https                                                               Use HTTPS remotes (token optional    │
+│                                                                       for public repos)                    │
+│ --include-archived      --exclude-archived                            Include archived repositories        │
+│                                                                       [default: include-archived]          │
+│ --prune                                                               Remove local mirrors that no longer  │
+│                                                                       exist upstream                       │
+│ --lfs                                                                 Fetch Git LFS objects after          │
+│                                                                       mirroring                            │
+│ --working-tree          --bare                                        Clone repositories as working trees  │
+│                                                                       instead of bare mirrors              │
+│                                                                       [default: bare]                      │
+│ --sleep                                       <float range> [x>=0.0]  Delay between repositories in        │
+│                                                                       seconds                              │
+│                                                                       [default: 0.0]                       │
+│ --limit                                       <int range> [x>=1]      Process at most this many            │
+│                                                                       repositories                         │
+│ --skip-forks                                                          Ignore forked repositories while     │
+│                                                                       mirroring                            │
+│ --workers           -w                        <int range> [x>=1]      Max concurrent mirror operations     │
+│                                                                       (default: based on CPU count)        │
+│ --help              -h                                                Show this message and exit.          │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
 
