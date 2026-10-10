@@ -365,7 +365,7 @@ def test_fetch_repositories_filters_and_errors(monkeypatch: pytest.MonkeyPatch) 
             return False
 
     monkeypatch.setattr(gbs, "GitHubAPI", DummyGitHubAPI)
-    monkeypatch.setattr(gbs.httpx, "AsyncClient", DummyClient)
+    monkeypatch.setattr(gbs.httpx2, "AsyncClient", DummyClient)
 
     repos = asyncio.run(
         gbs._fetch_repositories(

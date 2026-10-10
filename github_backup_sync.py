@@ -2,8 +2,8 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "httpx>=0.27.0",
-#     "gidgethub[httpx]>=5.0.0",
+#     "httpx2>=2.0.0",
+#     "gidgethub[httpx]>=6.0.0",
 #     "rich>=13.7.0",
 #     "typer>=0.12.3"
 # ]
@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
-import httpx
+import httpx2
 import typer
 from gidgethub import HTTPException
 from gidgethub.httpx import GitHubAPI
@@ -389,8 +389,8 @@ async def _fetch_repositories(
     limit: int | None,
 ) -> list[RepoInfo]:
     """Return repositories accessible to the authenticated user."""
-    timeout = httpx.Timeout(10.0, read=30.0)
-    async with httpx.AsyncClient(
+    timeout = httpx2.Timeout(10.0, read=30.0)
+    async with httpx2.AsyncClient(
         timeout=timeout,
         follow_redirects=True,
         headers={"Accept": "application/vnd.github+json"},
@@ -398,7 +398,7 @@ async def _fetch_repositories(
         gh = GitHubAPI(client, "mirror-github-all", oauth_token=token)
         repos: list[RepoInfo] = []
         try:
-            params = {
+            params: dict[str, str | int] = {
                 "per_page": 100,
                 "affiliation": "owner,collaborator,organization_member",
                 "visibility": "all",
