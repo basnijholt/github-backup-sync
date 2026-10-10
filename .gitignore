@@ -7,3 +7,8 @@ uv.lock
 .code/
 .coverage
 .envrc
+.venv/
+dist/
+build/
+htmlcov/
+coverage.xml
