@@ -243,7 +243,7 @@ def test_mirror_worker_respects_sleep(monkeypatch: pytest.MonkeyPatch, tmp_path:
     job = gbs.MirrorJob(repo=repo, destination=tmp_path / "repo.git", remote=repo.ssh_url)
     monkeypatch.setattr(gbs, "_sync_repository", lambda *_: "updated")
     slept: list[float] = []
-    monkeypatch.setattr(gbs.time, "sleep", lambda seconds: slept.append(seconds))
+    monkeypatch.setattr(gbs.time, "sleep", slept.append)
 
     result = gbs._mirror_worker(job, gbs.MirrorOptions(bare=True, lfs=False, sleep_seconds=0.25))
     assert result[1] == "updated"

@@ -279,7 +279,7 @@ def _detect_default_branch(repo: RepoInfo, path: Path) -> str | None:
     )
     if result.returncode != 0:
         return None
-    stdout = cast(str, result.stdout)
+    stdout = cast("str", result.stdout)
     ref = stdout.strip()
     if ref.startswith("refs/remotes/origin/"):
         return ref.rsplit("/", 1)[-1]
@@ -453,7 +453,7 @@ def _prune_or_preview(root: Path, expected: set[Path], prune: bool) -> None:
 
 
 @app.command(context_settings={"help_option_names": ["-h", "--help"]})
-def main(  # noqa: PLR0913  # CLI entrypoint needs many options and branches
+def main(  # noqa: PLR0913, PLR0917  # CLI entrypoint needs many options and branches
     ctx: typer.Context,
     root: Path | None = typer.Option(
         None,
