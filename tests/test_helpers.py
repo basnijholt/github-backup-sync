@@ -39,22 +39,17 @@ def test_repo_info_from_payload() -> None:
     assert info.fork is True
 
 
-def test_build_remote_url_https_token_injection() -> None:
-    repo = make_repo()
-    url = gbs._build_remote_url(repo, use_https=True, token="abc123")
-    assert "abc123@" in url
-
-
 def test_build_remote_url_missing_raises() -> None:
     repo = make_repo(ssh_url=None)
     with pytest.raises(RuntimeError):
-        gbs._build_remote_url(repo, use_https=False, token=None)
+        gbs._build_remote_url(repo, use_https=False)
 
 
-def test_build_remote_url_https_without_token() -> None:
+def test_build_remote_url_https_has_no_credentials() -> None:
     repo = make_repo()
-    url = gbs._build_remote_url(repo, use_https=True, token=None)
+    url = gbs._build_remote_url(repo, use_https=True)
     assert url == repo.clone_url
+    assert "@" not in url
 
 
 def test_require_token_or_exit_success(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -115,7 +110,9 @@ def test_run_git_invokes_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(gbs.subprocess, "run", fake_run)
     gbs._run_git(["status"], cwd=Path("/tmp"), check=False)
-    assert recorded["cmd"][0] == "git"
+    assert recorded["cmd"] == ["git", *gbs.GIT_CREDENTIAL_ARGS, "status"]
+    assert "credential.helper=!gh auth git-credential" in recorded["cmd"]
+    assert recorded["kwargs"]["env"]["GIT_TERMINAL_PROMPT"] == "0"
 
 
 def test_sync_repository_clones_bare_with_lfs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

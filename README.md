@@ -97,7 +97,7 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 | Option                                    | Description                                                                         |
 | ----------------------------------------- | ----------------------------------------------------------------------------------- |
 | `-r, --root PATH`                         | Backup directory (required, created if missing)                                     |
-| `--https`                                 | Use HTTPS remotes instead of SSH; the `gh` token authenticates private repositories |
+| `--https`                                 | Use HTTPS remotes instead of SSH, authenticated through the GitHub CLI              |
 | `--prune`                                 | Delete local mirrors that no longer exist upstream; without it they are only listed |
 | `--working-tree / --bare`                 | Clone with files checked out instead of bare mirrors (default: `--bare`)            |
 | `--include-archived / --exclude-archived` | Whether to back up archived repositories (default: include)                         |
@@ -107,9 +107,9 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 | `--sleep SECONDS`                         | Delay between repositories                                                          |
 | `--limit N`                               | Process at most `N` repositories, handy for smoke tests                             |
 
-> [!WARNING]
-> With `--https`, the token is embedded in each remote URL, so it is stored in plain text in every mirror's `config` file.
-> Keep the backup directory private, or stick with the default SSH remotes.
+> [!TIP]
+> With `--https`, git asks `gh auth git-credential` for the token on demand, so it is never written to a mirror's `config` or visible in the process list.
+> Mirrors created by versions before 0.2.1 stored the token in their remote URL; the next sync rewrites it to a plain URL.
 
 > [!NOTE]
 > In `--working-tree` mode every run checks out the default branch and hard-resets it to `origin`, discarding local edits.
@@ -139,8 +139,8 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --root              -r                        <path>                  Directory that will hold the mirror  │
-│ --https                                                               Use HTTPS remotes (token optional    │
-│                                                                       for public repos)                    │
+│ --https                                                               Use HTTPS remotes, authenticated     │
+│                                                                       through the GitHub CLI               │
 │ --include-archived      --exclude-archived                            Include archived repositories        │
 │                                                                       [default: include-archived]          │
 │ --prune                                                               Remove local mirrors that no longer  │

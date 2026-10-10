@@ -17,7 +17,6 @@ import shutil
 import stat
 import subprocess
 import time
-import urllib.parse
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -33,6 +32,10 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 console = Console(highlight=False)
+# Authenticate HTTPS remotes through the GitHub CLI so the token is never written to a
+# mirror's config or passed on a command line. The empty value first clears any other
+# configured helpers. SSH remotes never consult credential helpers.
+GIT_CREDENTIAL_ARGS = ("-c", "credential.helper=", "-c", "credential.helper=!gh auth git-credential")
 app = typer.Typer(add_completion=False, no_args_is_help=True, rich_markup_mode="rich")
 
 
@@ -117,7 +120,6 @@ def _prepare_jobs(
     *,
     bare: bool,
     use_https: bool,
-    token: str,
 ) -> tuple[list[MirrorJob], set[Path]]:
     """Build ``MirrorJob`` objects plus the expected on-disk paths."""
     jobs: list[MirrorJob] = []
@@ -126,11 +128,7 @@ def _prepare_jobs(
         destination = _desired_path(root, repo, bare=bare)
         expected_paths.add(destination.resolve())
         try:
-            remote = _build_remote_url(
-                repo,
-                use_https=use_https,
-                token=token if use_https else None,
-            )
+            remote = _build_remote_url(repo, use_https=use_https)
         except RuntimeError as exc:
             console.print(f"[red]{exc}")
             continue
@@ -217,8 +215,9 @@ def _run_git(
 ) -> subprocess.CompletedProcess:
     """Execute a git command and return the completed process."""
     return subprocess.run(  # noqa: S603  # Running git CLI with explicit arguments
-        ["git", *args],
+        ["git", *GIT_CREDENTIAL_ARGS, *args],
         cwd=str(cwd) if cwd else None,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -252,16 +251,12 @@ def _obtain_token() -> str | None:
     return token
 
 
-def _build_remote_url(repo: RepoInfo, use_https: bool, token: str | None) -> str:
+def _build_remote_url(repo: RepoInfo, use_https: bool) -> str:
     """Build the remote URL used for mirroring a repository."""
     if use_https:
         if not repo.clone_url:
             message = f"{repo.full_name}: missing HTTPS clone URL"
             raise RuntimeError(message)
-        if token:
-            parsed = urllib.parse.urlparse(repo.clone_url)
-            netloc = f"{token}@{parsed.netloc}"
-            return urllib.parse.urlunparse(parsed._replace(netloc=netloc))
         return repo.clone_url
     if not repo.ssh_url:
         message = f"{repo.full_name}: missing SSH URL"
@@ -477,7 +472,7 @@ def main(  # noqa: PLR0913, PLR0917  # CLI entrypoint needs many options and bra
     use_https: bool = typer.Option(
         False,
         "--https",
-        help="Use HTTPS remotes (token optional for public repos)",
+        help="Use HTTPS remotes, authenticated through the GitHub CLI",
     ),
     include_archived: bool = typer.Option(
         True,
@@ -545,7 +540,6 @@ def main(  # noqa: PLR0913, PLR0917  # CLI entrypoint needs many options and bra
         repositories,
         bare=bare,
         use_https=use_https,
-        token=token,
     )
 
     if not jobs:
