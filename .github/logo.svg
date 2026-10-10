@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title desc">
+  <title id="title">github-backup-sync</title>
+  <desc id="desc">A stack of storage disks circled by slowly rotating sync arrows.</desc>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3fb950"/>
+      <stop offset="1" stop-color="#58a6ff"/>
+    </linearGradient>
+    <linearGradient id="disk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#21262d"/>
+      <stop offset="0.5" stop-color="#2d333b"/>
+      <stop offset="1" stop-color="#21262d"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .sync { transform-origin: 128px 128px; animation: spin 30s linear infinite; }
+    .led { fill: #3fb950; animation: blink 3s ease-in-out infinite; }
+    .l1 { animation-delay: 0.5s; }
+    .l2 { animation-delay: 1s; }
+    .slot { stroke: #6e7681; stroke-width: 3; stroke-linecap: round; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @media (prefers-reduced-motion: reduce) { .sync, .led { animation: none; } }
+  </style>
+  <rect x="4" y="4" width="248" height="248" rx="56" fill="url(#tile)" stroke="#30363d" stroke-width="2"/>
+  <g class="sync">
+    <g fill="none" stroke="url(#ring)" stroke-width="10" stroke-linecap="round">
+      <path d="M41.5 96.5A92 92 0 0 1 202.4 73.9"/>
+      <path d="M214.5 159.5A92 92 0 0 1 53.6 182.1"/>
+    </g>
+    <g fill="url(#ring)" stroke="url(#ring)" stroke-width="4" stroke-linejoin="round">
+      <path d="M210.7 63.4L213.3 93.5L190.3 79.4Z"/>
+      <path d="M45.3 192.6L42.7 162.5L65.7 176.6Z"/>
+    </g>
+  </g>
+  <g stroke="#c9d1d9" stroke-width="5" stroke-linejoin="round">
+    <path d="M84 86V170A44 12 0 0 0 172 170V86" fill="url(#disk)"/>
+    <ellipse cx="128" cy="86" rx="44" ry="12" fill="#30363d"/>
+    <path d="M84 114A44 12 0 0 0 172 114M84 142A44 12 0 0 0 172 142" fill="none"/>
+  </g>
+  <circle class="led l0" cx="150" cy="110.9" r="4.5"/><path class="slot" d="M102 109.4h22"/><circle class="led l1" cx="150" cy="138.9" r="4.5"/><path class="slot" d="M102 137.4h22"/><circle class="led l2" cx="150" cy="166.9" r="4.5"/><path class="slot" d="M102 165.4h22"/>
+</svg>
