@@ -511,7 +511,7 @@ def main(  # noqa: PLR0913, PLR0917  # CLI entrypoint needs many options and bra
         help="Max concurrent mirror operations (default: based on CPU count)",
     ),
 ) -> None:
-    """Coordinate the CLI workflow for mirroring repositories."""
+    """Mirror every GitHub repository you can access into local git mirrors."""
     root_path = _ensure_root_directory(ctx, root)
     bare = not working_tree
     token = _require_token_or_exit()
