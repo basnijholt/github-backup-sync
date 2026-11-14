@@ -139,15 +139,15 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 
 ╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --root              -r                        <path>                  Directory that will hold the mirror  │
-│ --https                                                               Use HTTPS remotes, authenticated     │
+│ --https                                       <bool>                  Use HTTPS remotes, authenticated     │
 │                                                                       through the GitHub CLI               │
-│ --include-archived      --exclude-archived                            Include archived repositories        │
+│ --include-archived      --exclude-archived    <bool>                  Include archived repositories        │
 │                                                                       [default: include-archived]          │
-│ --prune                                                               Remove local mirrors that no longer  │
+│ --prune                                       <bool>                  Remove local mirrors that no longer  │
 │                                                                       exist upstream                       │
-│ --lfs                                                                 Fetch Git LFS objects after          │
+│ --lfs                                         <bool>                  Fetch Git LFS objects after          │
 │                                                                       mirroring                            │
-│ --working-tree          --bare                                        Clone repositories as working trees  │
+│ --working-tree          --bare                <bool>                  Clone repositories as working trees  │
 │                                                                       instead of bare mirrors              │
 │                                                                       [default: bare]                      │
 │ --sleep                                       <float range> [x>=0.0]  Delay between repositories in        │
@@ -155,11 +155,11 @@ github-backup-sync --root /path/to/mirrors [--https] [--prune] [--skip-forks] [-
 │                                                                       [default: 0.0]                       │
 │ --limit                                       <int range> [x>=1]      Process at most this many            │
 │                                                                       repositories                         │
-│ --skip-forks                                                          Ignore forked repositories while     │
+│ --skip-forks                                  <bool>                  Ignore forked repositories while     │
 │                                                                       mirroring                            │
 │ --workers           -w                        <int range> [x>=1]      Max concurrent mirror operations     │
 │                                                                       (default: based on CPU count)        │
-│ --help              -h                                                Show this message and exit.          │
+│ --help              -h                        <bool>                  Show this message and exit.          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ```
